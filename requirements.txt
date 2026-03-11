@@ -1,0 +1,7 @@
+Flask
+torch
+transformers
+youtube-comment-downloader
+twikit
+langdetect
+gunicorn
