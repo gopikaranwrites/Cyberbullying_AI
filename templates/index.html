@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberbullying Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: linear-gradient(135deg, #0a0a0a, #1a0000, #330000); color: #ffffff; min-height: 100vh; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+        h1 { margin-bottom: 2rem; text-align: center; letter-spacing: 3px; text-transform: uppercase; color: #fff; animation: flicker 2s infinite alternate; }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff0033, 0 0 40px #ff0033, 0 0 80px #ff0033, 0 0 100px #ff0033; color: #fff; }
+            20%, 24%, 55% { text-shadow: none; color: #440000; }
+        }
+        
+        .glass { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(15px); border-radius: 12px; border: 1px solid rgba(255, 0, 51, 0.2); padding: 2rem; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8); }
+        .menu-container { display: flex; flex-direction: row; gap: 2rem; flex-wrap: wrap; justify-content: center; }
+        .mode-card { width: 250px; cursor: pointer; transition: all 0.3s ease; text-align: center; display: flex; flex-direction: column; gap: 1rem; }
+        .mode-card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(255, 0, 51, 0.3); border-color: #ff0033; }
+        .mode-card h2 { color: #ff3333; }
+
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.7); color: #fff; outline: none; transition: 0.3s; }
+        input:focus { border-color: #ff0033; box-shadow: 0 0 8px rgba(255,0,51,0.5); }
+        button { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; background: linear-gradient(90deg, #cc0000, #ff0033); color: #fff; font-weight: bold; transition: 0.3s; width: 100%; }
+        button:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(255,0,51,0.5); }
+        .btn-back { background: transparent; border: 1px solid #ff3333; margin-bottom: 20px; width: auto;}
+        
+        .view { display: none; width: 100%; max-width: 1000px; animation: fadeIn 0.5s ease forwards; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .comment-item { background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid gray; animation: slideIn 0.4s ease forwards; }
+        .comment-item.BULLYING { border-color: #ff3333; }
+        .comment-item.SAFE { border-color: #00cc66; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+        .result-box { margin-top: 20px; font-size: 1.2rem; text-align: center; }
+        .progress-bg { width: 100%; background: #1a1a1a; height: 25px; border-radius: 12px; overflow: hidden; margin-top: 15px; border: 1px solid #333;}
+        .progress-fill { height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .bg-red { background: #ff3333; } .bg-green { background: #00cc66; } 
+        .text-red { color: #ff3333; font-weight: bold;} .text-green { color: #00cc66; font-weight: bold;}
+        
+        .loader { border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #ff0033; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { text-align: center; color: #aaaaaa; font-size: 0.9rem; margin-top: 10px; }
+
+        .about-card { margin-top: 4rem; width: 250px; text-align: center; cursor: pointer; padding: 15px !important; border-color: #444 !important; }
+        .about-card:hover { border-color: #fff !important; box-shadow: 0 5px 15px rgba(255,255,255,0.1); }
+        .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; }
+
+        /* Summary Dashboard styling for Doughnut Chart */
+        .dashboard { display: flex; flex-direction: row; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .dashboard-text { flex: 1; text-align: left; }
+        .dashboard-chart { width: 150px; height: 150px; }
+    </style>
+</head>
+<body>
+
+    <h1>Cyberbullying Detector</h1>
+
+    <div id="view-home" class="view active">
+        <div class="menu-container">
+            <div class="glass mode-card" onclick="switchView('view-mode1')"><h2>Mode 1</h2><p>Custom Sentence Scan</p></div>
+            <div class="glass mode-card" onclick="switchView('view-mode2')"><h2>Mode 2</h2><p>X (Twitter) Live Scan</p></div>
+            <div class="glass mode-card" onclick="switchView('view-mode3')"><h2>Mode 3</h2><p>YouTube Live Scan</p></div>
+        </div>
+        <div style="display: flex; justify-content: center;">
+            <div class="glass about-card" onclick="openAboutModel()"><h3 style="color: #fff; font-size: 1.1rem;">📊 About Model</h3></div>
+        </div>
+    </div>
+
+    <!-- MODE 1: CUSTOM TEXT -->
+    <div id="view-mode1" class="view glass">
+        <button class="btn-back" onclick="switchView('view-home')">← Back to Menu</button>
+        <h2 style="margin-bottom: 15px;">Custom Text Analysis</h2>
+        <input type="text" id="m1-text" placeholder="Type a sentence here...">
+        <button onclick="runMode1()">Analyze Text</button>
+        <div id="m1-result" class="result-box"></div>
+    </div>
+
+    <!-- MODE 2: TWITTER -->
+    <div id="view-mode2" class="view glass">
+        <button class="btn-back" onclick="switchView('view-home')">← Back to Menu</button>
+        <h2 style="margin-bottom: 15px;">X (Twitter) Replies Scan</h2>
+        <input type="text" id="m2-url" placeholder="Paste X (Twitter) URL here">
+        <input type="number" id="m2-count" placeholder="Max Fetch Limit (Max 100)" value="50">
+        <button onclick="runMode2()">Fetch & Analyze X Replies</button>
+        <div id="m2-result" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- MODE 3: YOUTUBE -->
+    <div id="view-mode3" class="view glass">
+        <button class="btn-back" onclick="switchView('view-home')">← Back to Menu</button>
+        <h2 style="margin-bottom: 15px;">YouTube Comments Scan</h2>
+        <input type="text" id="m3-url" placeholder="Paste YouTube Video URL here">
+        <input type="number" id="m3-count" placeholder="Max Fetch Limit" value="50">
+        <button onclick="runMode3()">Fetch & Analyze YT Comments</button>
+        <div id="m3-result" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- ABOUT MODEL -->
+    <div id="view-about" class="view glass">
+        <button class="btn-back" onclick="switchView('view-home')">← Back to Menu</button>
+        <h2 style="margin-bottom: 5px; text-align: center;">Model Performance Comparison</h2>
+        <div class="chart-container"><canvas id="performanceChart"></canvas></div>
+    </div>
+
+    <script>
+        const spinnerHTML = '<div class="loader"></div><div class="loading-text">Fetching data... Please wait.</div>';
+        let chartInstance = null;
+        let ringChartInstance = null;
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.getElementById('m1-result').innerHTML = '';
+            document.getElementById('m2-result').innerHTML = '';
+            document.getElementById('m3-result').innerHTML = '';
+            if(ringChartInstance) { ringChartInstance.destroy(); }
+        }
+
+        function drawToxicityChart(canvasId, toxicCount, safeCount) {
+            if(ringChartInstance) { ringChartInstance.destroy(); }
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            ringChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Toxic', 'Safe'],
+                    datasets: [{
+                        data: [toxicCount, safeCount],
+                        backgroundColor: ['#ff3333', '#00cc66'],
+                        borderColor: ['#1a0000', '#1a0000'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        async function renderDashboard(data, resultContainerId, canvasId) {
+            const resContainer = document.getElementById(resultContainerId);
+            const summaryColor = data.summary.toxic_percent > 15 ? 'text-red' : 'text-green';
+            
+            // Build the Dashboard UI
+            let html = `
+                <div class="dashboard">
+                    <div class="dashboard-text">
+                        <h3 style="margin-bottom: 10px; font-size: 1.5rem;">Verdict: <span class="${summaryColor}">${data.summary.verdict}</span></h3>
+                        <p style="font-size: 1.1rem;">Total Analyzed: <b>${data.summary.total}</b></p>
+                        <p style="font-size: 1.1rem;"><span class="text-red">Toxic Comments: <b>${data.summary.toxic}</b></span></p>
+                        <p style="font-size: 1.1rem;"><span class="text-green">Safe Comments: <b>${data.summary.safe}</b></span></p>
+                    </div>
+                    <div class="dashboard-chart">
+                        <canvas id="${canvasId}"></canvas>
+                    </div>
+                </div>
+            `;
+
+            data.comments.forEach((c, index) => {
+                const colorCls = c.label === 'BULLYING' ? 'text-red' : 'text-green';
+                html += `
+                    <div class="comment-item ${c.label}" style="animation-delay: ${index * 0.05}s">
+                        <div style="flex: 1; text-align: left; font-size: 0.95rem;">${c.text}</div>
+                        <strong class="${colorCls}" style="margin-left: 15px;">${c.score}%</strong>
+                    </div>`;
+            });
+            
+            resContainer.innerHTML = html;
+            
+            // Draw the animated ring chart!
+            drawToxicityChart(canvasId, data.summary.toxic, data.summary.safe);
+        }
+
+        async function runMode1() {
+            const text = document.getElementById('m1-text').value;
+            if(!text) return;
+            document.getElementById('m1-result').innerHTML = spinnerHTML;
+            const res = await fetch('/api/mode1', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text}) });
+            const data = await res.json();
+            const color = data.label === 'BULLYING' ? 'text-red' : 'text-green';
+            const barColor = data.label === 'BULLYING' ? 'bg-red' : 'bg-green';
+            document.getElementById('m1-result').innerHTML = `
+                <h3 class="${color}">${data.label} (${data.score}%)</h3>
+                <div class="progress-bg"><div class="progress-fill ${barColor}" style="width: ${data.score}%"></div></div>`;
+        }
+
+        async function runMode2() {
+            const url = document.getElementById('m2-url').value;
+            const count = document.getElementById('m2-count').value;
+            if(!url) return;
+            document.getElementById('m2-result').innerHTML = spinnerHTML;
+            try {
+                const res = await fetch('/api/mode4', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url, count}) });
+                const data = await res.json();
+                if(!res.ok) { document.getElementById('m2-result').innerHTML = `<h3 class="text-red">Error: ${data.error}</h3>`; return; }
+                renderDashboard(data, 'm2-result', 'chart-m2');
+            } catch (err) { document.getElementById('m2-result').innerHTML = `<h3 class="text-red">Server disconnected.</h3>`; }
+        }
+
+        async function runMode3() {
+            const url = document.getElementById('m3-url').value;
+            const count = document.getElementById('m3-count').value;
+            if(!url) return;
+            document.getElementById('m3-result').innerHTML = spinnerHTML;
+            try {
+                const res = await fetch('/api/mode2', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url, count}) });
+                const data = await res.json();
+                if(!res.ok) { document.getElementById('m3-result').innerHTML = `<h3 class="text-red">Error: ${data.error}</h3>`; return; }
+                renderDashboard(data, 'm3-result', 'chart-m3');
+            } catch (err) { document.getElementById('m3-result').innerHTML = `<h3 class="text-red">Server disconnected.</h3>`; }
+        }
+
+        function openAboutModel() {
+            switchView('view-about');
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            if(chartInstance) { chartInstance.destroy(); }
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Accuracy', 'Precision', 'Recall', 'F1-Score'],
+                    datasets: [
+                        { label: 'Base Paper (Random Forest)', data: [81.03, 70.89, 75.54, 73.14], backgroundColor: 'rgba(150, 150, 150, 0.7)', borderColor: '#ffffff', borderWidth: 1 },
+                        { label: 'Proposed Model (BERTweet)', data: [93.10, 97.60, 88.30, 92.70], backgroundColor: 'rgba(255, 0, 51, 0.8)', borderColor: '#ff3333', borderWidth: 2 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, animation: { duration: 2000 }, scales: { y: { beginAtZero: true, max: 100, ticks: { color: '#ccc' } }, x: { ticks: { color: '#fff' } } }, plugins: { legend: { labels: { color: '#fff' } } } }
+            });
+        }
+    </script>
+</body>
+</html>
