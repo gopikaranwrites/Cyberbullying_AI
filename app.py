@@ -18,9 +18,10 @@ app = Flask(__name__)
 torch.set_num_threads(4)
 device = torch.device("cpu")
 
-print("Loading model and tokenizer...")
-tokenizer = AutoTokenizer.from_pretrained(".")
-model = AutoModelForSequenceClassification.from_pretrained(".")
+print("Loading model and tokenizer from Hugging Face Hub...")
+# Model is now loading directly from your Hugging Face repository
+tokenizer = AutoTokenizer.from_pretrained("kran071/cyberbullying-detector")
+model = AutoModelForSequenceClassification.from_pretrained("kran071/cyberbullying-detector")
 model.to(device)
 model.eval()
 
